@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Atlantic Winter Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a station-board itinerary. Sticky day strip like a departures board; each day is a platform with timeline, photo strip, and a grid of field notes. */
+:root{
+  --bg:#f3f5f7; --paper:#ffffff; --ink:#15202b; --muted:#56636f; --line:#d5dbe1;
+  --accent:#0b4f8a; --signal:#c8372d; --soft:#e6eef6; --warn-bg:#fff4dc; --warn-ink:#7a4b00;
+  --mta-ac:#0039a6; --mta-jz:#996633; --wm-green:#00b140; --wm-yellow:#ffd200;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Literata",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --paper:#17202a; --ink:#e7edf2; --muted:#9aa8b4; --line:#2b3743;
+  --accent:#6fb0ee; --signal:#f07a6f; --soft:#1d2a37; --warn-bg:#3a2d12; --warn-ink:#ffd58a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --paper:#17202a; --ink:#e7edf2; --muted:#9aa8b4; --line:#2b3743;
+  --accent:#6fb0ee; --signal:#f07a6f; --soft:#1d2a37; --warn-bg:#3a2d12; --warn-ink:#ffd58a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+a{color:var(--accent)} a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;line-height:1.1;margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* header */
+.top{background:var(--ink);color:var(--bg)}
+.top .wrap{padding-block:40px 28px;display:grid;gap:18px}
+.top h1{font-size:clamp(2.6rem,7vw,4.6rem);font-weight:700;letter-spacing:.01em;text-transform:uppercase}
+.top h1 span{color:var(--signal)}
+.top p{margin:0;max-width:62ch;opacity:.85}
+.route{display:flex;flex-wrap:wrap;gap:8px 14px;font-family:var(--f-mono);font-size:.82rem;align-items:center}
+.route b{font-weight:500;border:1px solid currentColor;padding:2px 8px;border-radius:3px}
+/* sticky strip */
+.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.strip .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:thin}
+.strip a{flex:0 0 auto;text-decoration:none;color:var(--ink);font-family:var(--f-display);font-weight:600;font-size:1rem;padding:6px 12px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
+.strip a small{font-family:var(--f-mono);font-weight:400;font-size:.7rem;color:var(--muted);margin-left:6px}
+.strip a:hover{background:var(--soft)}
+main .wrap{display:grid;gap:56px;padding-block:40px 64px}
+section{scroll-margin-top:70px}
+.sec-head{display:grid;gap:6px;margin-bottom:20px}
+.sec-head h2{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:700;text-transform:uppercase}
+.lead{max-width:68ch;color:var(--muted);margin:0}
+/* overview */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.fact{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-width:0}
+.fact h4{font-size:1.15rem;font-weight:600;margin-bottom:4px}
+.fact p{margin:0;font-size:.92rem}
+.money{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.todo{background:var(--warn-bg);color:var(--warn-ink);border-radius:6px;padding:16px 20px;margin-top:16px}
+.todo h4{font-size:1.2rem;margin-bottom:6px}
+.todo ul{margin:0;padding-left:1.2em}
+/* bullets */
+.bullet{display:inline-grid;place-items:center;width:1.45em;height:1.45em;border-radius:50%;font-family:Helvetica,Arial,sans-serif;font-weight:700;font-size:.8em;color:#fff;vertical-align:.08em}
+.b-ac{background:var(--mta-ac)} .b-jz{background:var(--mta-jz)}
+.b-g{background:var(--wm-green);border-radius:4px;width:auto;padding:0 .4em} .b-y{background:var(--wm-yellow);color:#111;border-radius:4px;width:auto;padding:0 .4em}
+/* stays */
+.stays{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px}
+.stay{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.stay .body{padding:18px 20px;display:grid;gap:14px}
+.stay h3{font-size:1.7rem;font-weight:700}
+.kv{display:grid;gap:10px}
+.kv div{display:grid;grid-template-columns:7.5em 1fr;gap:10px;font-size:.93rem}
+.kv dt{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:3px}
+.kv dd{margin:0;min-width:0}
+.kv ul{margin:0;padding-left:1.1em}
+/* photos */
+.photos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px}
+.ph{margin:0;position:relative;aspect-ratio:4/3;max-width:100%;background:var(--soft);border-radius:4px;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph figcaption{position:absolute;inset:auto 0 0 0;padding:16px 8px 6px;font-family:var(--f-mono);font-size:.68rem;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72))}
+.ph figcaption a{color:#fff}
+.ph .ph-fallback{position:absolute;inset:0;display:grid;place-items:center;padding:12px;text-align:center;font-family:var(--f-display);font-size:1.2rem;color:var(--muted)}
+.stay .photos{grid-template-columns:repeat(3,1fr);gap:2px}
+.stay .ph{border-radius:0}
+/* days */
+.day{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.day-head{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.day-head h3{font-size:clamp(1.6rem,3.6vw,2.2rem);font-weight:700}
+.day-head .date{font-family:var(--f-display);font-weight:600;color:var(--signal);font-size:1.1rem;text-transform:uppercase;letter-spacing:.03em}
+.tag{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border-radius:3px;background:var(--soft);color:var(--ink)}
+.day-body{display:grid;gap:22px;padding:20px}
+.cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.timeline li{display:grid;grid-template-columns:4.4em 1fr;gap:12px;padding:9px 0;border-top:1px dashed var(--line)}
+.timeline li:first-child{border-top:0}
+.timeline time{font-family:var(--f-mono);font-size:.8rem;color:var(--accent);font-variant-numeric:tabular-nums;padding-top:3px}
+.timeline b{font-weight:600}
+.timeline p{margin:2px 0 0;font-size:.9rem;color:var(--muted)}
+.notes{display:grid;gap:14px}
+.note h4{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;color:var(--accent)}
+.note p,.note ul{margin:0;font-size:.92rem}
+.note ul{padding-left:1.1em}
+.must{border-left:3px solid var(--signal);padding-left:12px}
+.must h4{color:var(--signal)}
+/* food + tables */
+.food{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.dish{background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.dish .ph{border-radius:0}
+.dish div.t{padding:12px 14px}
+.dish h4{font-size:1.2rem;font-weight:600}
+.dish p{margin:4px 0 0;font-size:.9rem}
+.tablewrap{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:620px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}
+.small{font-size:.85rem;color:var(--muted)}
+footer{border-top:1px solid var(--line)}
+footer .wrap{padding-block:24px 40px;font-size:.85rem;color:var(--muted);display:grid;gap:8px}
+footer ul{margin:0;padding-left:1.1em;columns:2;column-gap:28px}
+@media (max-width:640px){footer ul{columns:1}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow" style="color:inherit;opacity:.7">Shivam + 1 · 5–12 December 2026</div>
+    <h1>New York <span>→</span> Washington <span>→</span> Assateague <span>→</span> New York</h1>
+    <p>Eight days, one rental car, two Airbnbs, a lot of free museums. The car covers the DC loop and the coast; New York is done by subway from the Brooklyn base. Sunset is around 16:30, so every plan front-loads the daylight.</p>
+    <div class="route"><b>FRA 12:00</b> → <b>JFK 19:05 · Sat 5</b> · <b>JFK 18:30 · Sat 12</b> → <b>FRA 11:15 · Sun 13</b> · Air France Light fare</div>
+  </div>
+</header>
+
+<nav class="strip" aria-label="Jump to day">
+  <div class="wrap">
+    <a href="#overview">Overview</a>
+    <a href="#stays">Stays</a>
+    <a href="#d1">Day 1<small>Sat 5</small></a>
+    <a href="#d2">Day 2<small>Sun 6</small></a>
+    <a href="#d3">Day 3<small>Mon 7</small></a>
+    <a href="#d4">Day 4<small>Tue 8</small></a>
+    <a href="#d5">Day 5<small>Wed 9</small></a>
+    <a href="#d6">Day 6<small>Thu 10</small></a>
+    <a href="#d7">Day 7<small>Fri 11</small></a>
+    <a href="#d8">Day 8<small>Sat 12</small></a>
+    <a href="#eat">What to eat</a>
+    <a href="#groceries">Supermarkets</a>
+  </div>
+</nav>
+
+<main><div class="wrap">
+
+<section id="overview">
+  <div class="sec-head"><div class="eyebrow">Overview</div><h2>Bookings and the shape of the week</h2>
+  <p class="lead">Bookings as of 23 Oct 2026. Some dates are still open, so the plan below is the version this page recommends; adjust the Airbnb and car dates to match.</p></div>
+  <div class="facts">
+    <div class="fact"><h4>Flights · Air France</h4><p>Out Sat 5 Dec FRA 12:00 → JFK 19:05 (via CDG). Back Sat 12 Dec JFK 18:30 → FRA 11:15 Sun. <span class="money">602 €</span>, Light fare, so plan on carry-on only.</p></div>
+    <div class="fact"><h4>Brooklyn Airbnb</h4><p>Atkins Ave, Cypress Hills / East New York. <span class="money">815 €</span>. Recommended nights: <b>5 Dec</b> and <b>9–11 Dec</b>.</p></div>
+    <div class="fact"><h4>DC Airbnb</h4><p>Decatur St NW, Petworth / Brightwood Park. <span class="money">300 €</span>. Recommended nights: <b>6, 7, 8 Dec</b>.</p></div>
+    <div class="fact"><h4>Car · Avis at JFK</h4><p>VW Jetta, full insurance. <span class="money">150 €</span>. Recommended: pick up Sat 5 evening, return Wed 9 night or Thu 10 morning.</p></div>
+    <div class="fact"><h4>Running total</h4><p><span class="money">≈ 1,867 €</span> before fuel, tolls (roughly $40–60 each way NYC↔DC), transit, food and tickets.</p></div>
+    <div class="fact"><h4>December weather</h4><p>Expect about 0 to 7 °C in New York and slightly milder in DC, wind on the coast. Sunset ~16:30 NYC, ~16:45 DC. Pack a warm layer, hat and gloves.</p></div>
+  </div>
+  <div class="todo">
+    <h4>Sort before you fly</h4>
+    <ul>
+      <li>The flight booking shows <b>1 passenger</b>. Book or confirm the second traveller's ticket.</li>
+      <li>Indian passport: check that both of you hold a valid <b>US B1/B2 visa</b> (ESTA does not apply).</li>
+      <li>Fix Airbnb dates. Brooklyn needs the night of 5 Dec too, or book one cheap night near JFK instead.</li>
+      <li>Reserve free timed passes for the National Museum of African American History and Culture (same-day passes drop online at 6:30 ET) and the Air and Space Museum.</li>
+      <li>Ask Avis about the toll transponder fee and bring your licence (an International Driving Permit is a cheap safety net).</li>
+      <li>Set up one contactless card or phone wallet per person for NYC subway (OMNY) and DC Metro taps.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="stays">
+  <div class="sec-head"><div class="eyebrow">Where you're staying</div><h2>Two bases, both on the subway</h2></div>
+  <div class="stays">
+    <article class="stay">
+      <div class="photos">
+        <figure class="ph" data-wiki="Cypress_Hills,_Brooklyn"></figure>
+        <figure class="ph" data-wiki="Highland_Park_(New_York_City)"></figure>
+        <figure class="ph" data-wiki="Euclid_Avenue_station_(IND_Fulton_Street_Line)"></figure>
+      </div>
+      <div class="body">
+        <div><div class="eyebrow">Nights 5, 9, 10, 11 Dec</div><h3>Atkins Ave, Brooklyn</h3></div>
+        <dl class="kv">
+          <div><dt>Vibe</dt><dd>Quiet, residential East Brooklyn: brick row houses, Latino and Caribbean bakeries and corner shops, elevated J train rattling over Fulton St. Not touristy, which is what keeps it affordable.</dd></div>
+          <div><dt>Transit</dt><dd><span class="bullet b-jz">J</span> <span class="bullet b-jz">Z</span> on the elevated line above Fulton St (Cleveland St / Norwood Av / Crescent St) and <span class="bullet b-ac">A</span> <span class="bullet b-ac">C</span> along Pitkin Ave (Euclid Av is the express stop). Lower Manhattan is about 40–50 min. $3.00 per ride, capped at $35 per 7 days per card.</dd></div>
+          <div><dt>To JFK</dt><dd>Take an <span class="bullet b-ac">A</span> marked <b>Far Rockaway</b> or <b>Rockaway Park</b> (not Lefferts Blvd) to Howard Beach, then AirTrain ($8.75). Driving takes 20–30 min.</dd></div>
+          <div><dt>Nature nearby</dt><dd>Highland Park and the Ridgewood Reservoir sit just north of Jamaica Ave: wooded paths and city views. Jamaica Bay Wildlife Refuge is a straight A-train ride (Day 8).</dd></div>
+          <div><dt>Veg food</dt><dd>Liberty Ave in Ozone Park / Richmond Hill, a few A stops east, is Little Guyana: doubles and channa roti at Singh's Roti Shop (131-18 Liberty Ave). Otherwise cook at home.</dd></div>
+          <div><dt>Groceries</dt><dd>SuperFresh, 3260 Fulton St (opened Oct 2025). Bigger shop: Gateway Center (501 Gateway Dr) with Aldi, Lidl and ShopRite. Easiest by car on Day 1 or Day 5.</dd></div>
+        </dl>
+      </div>
+    </article>
+    <article class="stay">
+      <div class="photos">
+        <figure class="ph" data-wiki="Petworth_(Washington,_D.C.)"></figure>
+        <figure class="ph" data-wiki="Rock_Creek_Park"></figure>
+        <figure class="ph" data-wiki="Georgia_Avenue–Petworth_station"></figure>
+      </div>
+      <div class="body">
+        <div><div class="eyebrow">Nights 6, 7, 8 Dec</div><h3>Decatur St NW, Washington</h3></div>
+        <dl class="kv">
+          <div><dt>Vibe</dt><dd>Leafy rowhouse streets with porches, a mix of long-time residents and newcomers. Georgia Ave has Ethiopian cafés, carry-outs and coffee shops. Calm at night.</dd></div>
+          <div><dt>Transit</dt><dd><span class="bullet b-g">Green</span> <span class="bullet b-y">Yellow</span> at Georgia Ave–Petworth (3700 Georgia Ave). Archives and L'Enfant Plaza on the Mall are a direct ride, about 15 min. Tap a contactless card; a ride costs a few dollars. Leave the car parked and read the street signs for permit zones and street-sweeping.</dd></div>
+          <div><dt>Nature nearby</dt><dd>Rock Creek Park is on your doorstep: a 1,700-acre wooded valley with trails, a creek and Peirce Mill.</dd></div>
+          <div><dt>Veg food</dt><dd>Ice 'N' Slice (3937 Georgia Ave) does a vegetarian Ethiopian "Addis Ababa" pizza with lentils, cabbage and spinach. Heat Da Spot Café (3213 Georgia Ave) for Ethiopian breakfast and chai. Hedzole (5505 Colorado Ave) does vegan jollof bowls. Büna Coffeehouse (4400 Georgia Ave) for coffee.</dd></div>
+          <div><dt>Groceries</dt><dd>Safeway, 3830 Georgia Ave NW, steps from the Metro. Target at DC USA in Columbia Heights (one Metro stop south) has a grocery section.</dd></div>
+          <div><dt>Heads-up</dt><dd>NuVegan Café, Shouk and HipCityVeg, often listed online, have closed.</dd></div>
+        </dl>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="d1" class="day">
+  <div class="day-head"><div><div class="date">Day 1 · Sat 5 Dec</div><h3>Land, grab the car, sleep in Brooklyn</h3></div><span class="tag">JFK → Brooklyn · 20–30 min drive</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="John_F._Kennedy_International_Airport"></figure>
+      <figure class="ph" data-wiki="AirTrain_JFK"></figure>
+      <figure class="ph" data-wiki="Gateway_Center_(Brooklyn)"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>19:05</time><div><b>Land at JFK Terminal 1</b><p>Allow about an hour for immigration (visa holders) and customs.</p></div></li>
+        <li><time>20:15</time><div><b>AirTrain to Federal Circle → Avis</b><p>The AirTrain loop between terminals and the rental station is free.</p></div></li>
+        <li><time>21:00</time><div><b>Drive to Atkins Ave</b><p>Belt Parkway or Conduit Ave, about 20–30 min.</p></div></li>
+        <li><time>21:30</time><div><b>Supply run</b><p>With the car, Gateway Center (ShopRite, Aldi, Lidl) is ~10 min away; check closing times. Otherwise SuperFresh on Fulton St. Buy breakfast and road-trip snacks for tomorrow.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note must"><h4>Must do</h4><p>Sleep. Driving 4–5 hours to DC after a transatlantic flight and a 19:05 landing is the riskiest part of this trip; tomorrow morning is the safer start.</p></div>
+        <div class="note"><h4>If the Brooklyn Airbnb can't start on the 5th</h4><p>Book one budget room near JFK and keep the Airbnb for 9–12 Dec.</p></div>
+        <div class="note"><h4>Dinner</h4><p>Airport food is overpriced. Eat on the plane, then something simple from the supermarket.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d2" class="day">
+  <div class="day-head"><div><div class="date">Day 2 · Sun 6 Dec</div><h3>Drive to DC, monuments at dusk</h3></div><span class="tag">≈370 km · 4–5 h · tolls</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Verrazzano-Narrows_Bridge"></figure>
+      <figure class="ph" data-wiki="Washington_Monument"></figure>
+      <figure class="ph" data-wiki="Lincoln_Memorial"></figure>
+      <figure class="ph" data-wiki="Martin_Luther_King_Jr._Memorial"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>08:30</time><div><b>Leave Brooklyn</b><p>Verrazzano Bridge → Staten Island → NJ Turnpike → I-95 through Delaware and Baltimore → DC. Sunday morning traffic is light.</p></div></li>
+        <li><time>11:00</time><div><b>Rest stop on the Turnpike or in Delaware</b><p>Stretch, fuel up. Gas is cheaper outside New York.</p></div></li>
+        <li><time>13:30</time><div><b>Check in on Decatur St</b><p>Park on the street and leave the car for two days.</p></div></li>
+        <li><time>14:45</time><div><b>Metro to the Mall</b><p><span class="bullet b-g">Green</span> or <span class="bullet b-y">Yellow</span> to Archives or L'Enfant Plaza.</p></div></li>
+        <li><time>15:00</time><div><b>Washington Monument → WWII Memorial → Reflecting Pool</b><p>A flat 2 km walk west along the Mall.</p></div></li>
+        <li><time>16:30</time><div><b>Lincoln Memorial at sunset</b><p>Climb the steps, then look back east down the Reflecting Pool as the Monument lights up.</p></div></li>
+        <li><time>17:15</time><div><b>MLK Memorial and the Tidal Basin</b><p>Then the National Christmas Tree on the Ellipse near the White House, usually lit in early December.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>The vibe</h4><p>The Mall at dusk is the best free show in DC: white marble going gold, then floodlit, with far fewer people than in daytime.</p></div>
+        <div class="note"><h4>What the memorials are</h4><ul><li><b>Lincoln Memorial:</b> Greek-temple tribute to Abraham Lincoln, where Martin Luther King Jr. gave "I Have a Dream" in 1963.</li><li><b>WWII Memorial:</b> 56 pillars and two arches for the states and the Atlantic and Pacific theatres.</li><li><b>MLK Memorial:</b> King carved emerging from a "Stone of Hope".</li></ul></div>
+        <div class="note"><h4>Eat (veg)</h4><p>Pack lunch for the drive. Dinner back on Georgia Ave: vegetarian Addis Ababa pizza at Ice 'N' Slice, or cook with Safeway groceries.</p></div>
+        <div class="note must"><h4>Must do</h4><p>Be at the Lincoln Memorial steps by 16:30.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d3" class="day">
+  <div class="day-head"><div><div class="date">Day 3 · Mon 7 Dec</div><h3>Smithsonian day</h3></div><span class="tag">All free · Metro only</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="National_Museum_of_Natural_History"></figure>
+      <figure class="ph" data-wiki="Hope_Diamond"></figure>
+      <figure class="ph" data-wiki="National_Air_and_Space_Museum"></figure>
+      <figure class="ph" data-wiki="National_Museum_of_African_American_History_and_Culture"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>09:30</time><div><b>Metro to Smithsonian or Archives</b><p>Museums open around 10:00.</p></div></li>
+        <li><time>10:00</time><div><b>National Museum of Natural History</b><p>Hope Diamond, the Hall of Fossils with T. rex, the Ocean Hall's whale model, Hall of Human Origins. 2 hours.</p></div></li>
+        <li><time>12:15</time><div><b>Lunch at Mitsitam Café</b><p>Inside the National Museum of the American Indian; Native dishes from across the Americas with vegetarian choices.</p></div></li>
+        <li><time>13:30</time><div><b>National Air and Space Museum</b><p>The Wright Flyer, Apollo 11 command module, Spirit of St. Louis. Free timed pass.</p></div></li>
+        <li><time>15:30</time><div><b>National Museum of African American History and Culture</b><p>Start at the bottom: the history galleries rise from the slave trade to the present. Needs at least 2 hours; open until 17:30.</p></div></li>
+        <li><time>18:00</time><div><b>Evening</b><p>Walk past the Capitol, lit at night, then Metro home.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>What the museums are about</h4><ul><li><b>Natural History:</b> 145+ million specimens; dinosaurs, gems, mammals, human evolution.</li><li><b>Air and Space:</b> the world's most-visited aviation museum, from the first powered flight to the Moon.</li><li><b>NMAAHC:</b> the bronze-latticed building telling American history through Black experience; emotional, essential, popular.</li></ul></div>
+        <div class="note"><h4>Passes</h4><p>NMAAHC: same-day online passes from 6:30 ET; weekday walk-ups are limited, from 13:00 on Madison Dr. Air and Space: reserve free timed entry online.</p></div>
+        <div class="note"><h4>Eat (veg)</h4><p>Mitsitam for lunch. Dinner in Adams Morgan: shiro (spiced chickpea stew) on injera at Tsehay, an easy bus ride from Petworth.</p></div>
+        <div class="note must"><h4>Must do</h4><p>The NMAAHC history galleries. Book the pass the moment it opens.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d4" class="day">
+  <div class="day-head"><div><div class="date">Day 4 · Tue 8 Dec</div><h3>Capitol Hill, then Georgetown and the woods</h3></div><span class="tag">Metro + walking</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Thomas_Jefferson_Building"></figure>
+      <figure class="ph" data-wiki="United_States_Capitol"></figure>
+      <figure class="ph" data-wiki="Georgetown_(Washington,_D.C.)"></figure>
+      <figure class="ph" data-wiki="Chesapeake_and_Ohio_Canal"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>08:00</time><div><b>Morning walk in Rock Creek Park</b><p>Bare winter trees, the creek, Boulder Bridge. 10–15 min from the Airbnb.</p></div></li>
+        <li><time>10:00</time><div><b>Library of Congress, Jefferson Building</b><p>Free. Arguably the most beautiful interior in DC: mosaics, marble and the overlook into the Main Reading Room. Jefferson's own library is on display.</p></div></li>
+        <li><time>11:30</time><div><b>Capitol and Supreme Court exteriors</b><p>Free Capitol tours run via the Visitor Center; book ahead if you want to go inside.</p></div></li>
+        <li><time>12:30</time><div><b>Eastern Market</b><p>Historic market hall, a few blocks east. Snack or picnic supplies.</p></div></li>
+        <li><time>14:00</time><div><b>Georgetown</b><p>Cobbled streets, Federal-style houses, the C&amp;O Canal towpath and the waterfront along the Potomac.</p></div></li>
+        <li><time>16:30</time><div><b>Sunset on the Georgetown Waterfront</b><p>View across to the Kennedy Center and Virginia.</p></div></li>
+        <li><time>18:00</time><div><b>Ethiopian dinner, then early night</b><p>Tomorrow starts at 07:00.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>The vibe</h4><p>Capitol Hill is all power and pomp; Georgetown is old brick and boutiques, older than DC itself.</p></div>
+        <div class="note"><h4>Eat (veg)</h4><ul><li><b>Das</b> (Georgetown): Ethiopian; order the shiro or a veggie combo.</li><li><b>Indigo</b> (H St NE): cheap, home-style Indian.</li><li><b>Busboys and Poets</b>: café-bookstore chain, good vegan tofu scramble.</li></ul></div>
+        <div class="note"><h4>Prep for tomorrow</h4><p>Pack bags tonight, buy picnic food at Safeway, fill up the tank.</p></div>
+        <div class="note must"><h4>Must do</h4><p>The Main Reading Room overlook in the Jefferson Building.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d5" class="day">
+  <div class="day-head"><div><div class="date">Day 5 · Wed 9 Dec</div><h3>Wild ponies on Assateague, then back to Brooklyn</h3></div><span class="tag">≈3 h + ≈5 h driving</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Chesapeake_Bay_Bridge"></figure>
+      <figure class="ph" data-wiki="Assateague_Island_National_Seashore"></figure>
+      <figure class="ph" data-wiki="Chincoteague_pony"></figure>
+      <figure class="ph" data-wiki="Assateague_Island"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>07:00</time><div><b>Check out, drive east</b><p>US-50 over the Chesapeake Bay Bridge, across the flat farm country of Maryland's Eastern Shore.</p></div></li>
+        <li><time>10:00</time><div><b>Assateague Island Visitor Center</b><p>Open 9:00–16:00 daily. Small aquarium tanks and exhibits on the barrier island.</p></div></li>
+        <li><time>10:30</time><div><b>Into the Maryland district</b><p>$25 vehicle pass (valid 7 days). Drive the bayside road slowly; the wild horses often graze by the roadside.</p></div></li>
+        <li><time>11:00</time><div><b>Three short nature trails</b><p>Life of the Marsh, Life of the Forest and Life of the Dunes, each under a mile on boardwalk.</p></div></li>
+        <li><time>12:30</time><div><b>Picnic on an empty winter beach</b><p>Windy, wide and nearly deserted in December.</p></div></li>
+        <li><time>14:00</time><div><b>Drive north to Brooklyn</b><p>Via Delaware, the Delaware Memorial Bridge and the NJ Turnpike, about 5 h with a stop.</p></div></li>
+        <li><time>19:30</time><div><b>Check in on Atkins Ave, return the car</b><p>Either tonight at JFK (then AirTrain + A home) or tomorrow morning on the way into Manhattan.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>What's in the nature</h4><p>A 37-mile barrier island of dunes, pine forest and salt marsh. The Maryland side's horses descend from animals living here for centuries. In winter you'll also see migrating ducks, geese and herons in the marsh.</p></div>
+        <div class="note"><h4>Rules</h4><p>The horses are wild and bite and kick. Stay at least 40 feet (a bus length) away and never feed them.</p></div>
+        <div class="note"><h4>Eat</h4><p>Off-season, most nearby restaurants in Ocean City are closed. Bring a packed lunch and a thermos.</p></div>
+        <div class="note"><h4>Too much driving?</h4><p>Eight hours at the wheel is a lot. Alternative: skip Assateague and drive DC → Brooklyn directly (4–5 h), or do Assateague as Tuesday's round trip from DC.</p></div>
+        <div class="note must"><h4>Must do</h4><p>See the wild horses, then walk over the dunes to the Atlantic.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d6" class="day">
+  <div class="day-head"><div><div class="date">Day 6 · Thu 10 Dec</div><h3>Lower Manhattan and the Brooklyn Bridge</h3></div><span class="tag">Subway · mostly free</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Staten_Island_Ferry"></figure>
+      <figure class="ph" data-wiki="Statue_of_Liberty"></figure>
+      <figure class="ph" data-wiki="National_September_11_Memorial_&_Museum"></figure>
+      <figure class="ph" data-wiki="Brooklyn_Bridge"></figure>
+      <figure class="ph" data-wiki="Dumbo,_Brooklyn"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>08:30</time><div><b>Into Manhattan</b><p><span class="bullet b-jz">J</span> to Broad St, or <span class="bullet b-ac">A</span> to Fulton St. If the car is still with you, return it at JFK first and ride AirTrain → Howard Beach → <span class="bullet b-ac">A</span>.</p></div></li>
+        <li><time>09:30</time><div><b>Staten Island Ferry, round trip</b><p>Free, 25 min each way, every 30 min. Stand on the right going out for the Statue of Liberty and the skyline.</p></div></li>
+        <li><time>11:00</time><div><b>Battery Park → Charging Bull → Wall St</b><p>Trinity Church and the Stock Exchange on the way.</p></div></li>
+        <li><time>12:00</time><div><b>9/11 Memorial</b><p>The two reflecting pools on the Twin Towers' footprints are free. The museum below is about $33 and worth 2 hours if you want it.</p></div></li>
+        <li><time>13:30</time><div><b>Lunch in Chinatown</b><p>A 15-min walk north-east.</p></div></li>
+        <li><time>15:00</time><div><b>Walk the Brooklyn Bridge</b><p>From City Hall, about 30 min across on the wooden promenade.</p></div></li>
+        <li><time>15:45</time><div><b>DUMBO and Brooklyn Bridge Park at sunset</b><p>Washington St framed by the Manhattan Bridge, Jane's Carousel, and the skyline turning pink.</p></div></li>
+        <li><time>17:30</time><div><b>Home</b><p><span class="bullet b-ac">A</span> or <span class="bullet b-ac">C</span> from High St, straight to Euclid Av.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>The vibe</h4><p>Ferry horns, finance canyons and the quiet of the memorial pools, then the classic bridge walk.</p></div>
+        <div class="note"><h4>Eat (veg)</h4><ul><li><b>Bodhi Kosher Vegetarian</b>, 77 Mulberry St: vegetarian dim sum.</li><li><b>Spring Cafe</b>, 153D Centre St: cheap vegan combo plates and bento.</li><li><b>Orchard Grocer</b>, 78 Orchard St: vegan deli sandwiches.</li></ul></div>
+        <div class="note must"><h4>Must do</h4><p>The free ferry past the Statue of Liberty, and the bridge walk timed for sunset.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d7" class="day">
+  <div class="day-head"><div><div class="date">Day 7 · Fri 11 Dec</div><h3>The Met, Central Park and holiday Midtown</h3></div><span class="tag">Subway · Met $30</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Metropolitan_Museum_of_Art"></figure>
+      <figure class="ph" data-wiki="Bethesda_Terrace_and_Fountain"></figure>
+      <figure class="ph" data-wiki="Rockefeller_Center_Christmas_Tree"></figure>
+      <figure class="ph" data-wiki="Grand_Central_Terminal"></figure>
+      <figure class="ph" data-wiki="Bryant_Park"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>09:00</time><div><b>Subway uptown</b><p><span class="bullet b-ac">A</span> to 59 St–Columbus Circle, then walk through the park.</p></div></li>
+        <li><time>09:30</time><div><b>Central Park walk</b><p>The Mall's elm avenue, Bethesda Terrace, Bow Bridge, then east to Fifth Ave.</p></div></li>
+        <li><time>10:30</time><div><b>The Metropolitan Museum of Art</b><p>Open until 21:00 on Fridays. Pick 3 or 4 wings: Temple of Dendur, Arms and Armor, European paintings, the rooftop if open.</p></div></li>
+        <li><time>14:00</time><div><b>Lunch on the Upper East Side</b><p>Ginger Root on 1st Ave, a 10-min walk from the Met.</p></div></li>
+        <li><time>15:30</time><div><b>Down Fifth Avenue</b><p>Holiday window displays, St. Patrick's Cathedral.</p></div></li>
+        <li><time>16:30</time><div><b>Rockefeller Center tree</b><p>Lit on 2 Dec 2026. Skaters on the rink below. Busy; go early in the evening.</p></div></li>
+        <li><time>17:30</time><div><b>Grand Central and Bryant Park</b><p>The celestial ceiling and Whispering Gallery, then the free Winter Village holiday shops in Bryant Park.</p></div></li>
+        <li><time>19:30</time><div><b>Times Square, briefly</b><p>Ten minutes is enough. <span class="bullet b-ac">A</span> or <span class="bullet b-ac">C</span> from 42 St home.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>What the Met is about</h4><p>5,000 years of art from every continent under one roof: an Egyptian temple, Greek and Roman sculpture, medieval armour, Vermeer and Van Gogh. It's too big for one visit, so choose your wings and skip the rest.</p></div>
+        <div class="note"><h4>Eat (veg)</h4><ul><li><b>Ginger Root</b>, 1164 1st Ave: vegan Chinese, near the Met.</li><li><b>Vegan on the Fly</b>, 24 W 45th St: cheap vegan fast food in Midtown.</li><li><b>PLNT Burger</b> near Bryant Park: cheap plant burgers.</li><li><b>HanGawi</b>, 2 E 32nd St: serene vegan Korean if you want one splurge.</li></ul></div>
+        <div class="note"><h4>Swap if you prefer</h4><p>Instead of Times Square: the High Line, Chelsea Market and Hudson Yards in the evening.</p></div>
+        <div class="note must"><h4>Must do</h4><p>The Temple of Dendur at the Met, and the Rockefeller tree after dark.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="d8" class="day">
+  <div class="day-head"><div><div class="date">Day 8 · Sat 12 Dec</div><h3>Marsh birds, then the flight home</h3></div><span class="tag">A train → JFK</span></div>
+  <div class="day-body">
+    <div class="photos">
+      <figure class="ph" data-wiki="Jamaica_Bay_Wildlife_Refuge"></figure>
+      <figure class="ph" data-wiki="Broad_Channel,_Queens"></figure>
+      <figure class="ph" data-wiki="Jamaica_Bay"></figure>
+    </div>
+    <div class="cols">
+      <ol class="timeline">
+        <li><time>08:30</time><div><b>Pack up</b><p>Ask the host the day before for a bag hold or late checkout.</p></div></li>
+        <li><time>09:00</time><div><b><span class="bullet b-ac">A</span> to Broad Channel</b><p>Take a Far Rockaway or Rockaway Park train; the line crosses open water. About 25 min.</p></div></li>
+        <li><time>10:00</time><div><b>Jamaica Bay Wildlife Refuge</b><p>The West Pond loop, about 2.5 km on flat gravel. Visitor center open Fri–Mon 10:00–16:00.</p></div></li>
+        <li><time>12:00</time><div><b>Back for bags, lunch</b><p>Last supermarket picnic, or doubles on Liberty Ave.</p></div></li>
+        <li><time>14:30</time><div><b><span class="bullet b-ac">A</span> to Howard Beach, AirTrain to JFK</b><p>$3.00 + $8.75. About 45 min door to terminal.</p></div></li>
+        <li><time>15:30</time><div><b>At the airport</b><p>Three hours before the 18:30 international flight.</p></div></li>
+      </ol>
+      <div class="notes">
+        <div class="note"><h4>What's in the nature</h4><p>Salt marsh, ponds and dunes inside city limits, with the Manhattan skyline on the horizon. Winter brings brant geese, buffleheads and other ducks; owls turn up some years. Planes from JFK pass overhead.</p></div>
+        <div class="note"><h4>Carry-on only</h4><p>The Light fare usually has no checked bag. Shop accordingly through the week.</p></div>
+        <div class="note must"><h4>Must do</h4><p>Leave for JFK by 14:30. Weekend subway work happens; check the MTA app the night before.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="eat">
+  <div class="sec-head"><div class="eyebrow">What to eat</div><h2>Cheap, vegetarian, and local</h2>
+  <p class="lead">All of these are vegetarian or have a standard vegetarian version, and none cost much.</p></div>
+  <div class="food">
+    <div class="dish"><figure class="ph" data-wiki="Bagel"></figure><div class="t"><h4>NYC bagel</h4><p>Everything bagel with scallion cream cheese from any neighbourhood bagel shop. Breakfast for a few dollars.</p></div></div>
+    <div class="dish"><figure class="ph" data-wiki="New_York-style_pizza"></figure><div class="t"><h4>A plain slice</h4><p>Thin, foldable, eaten standing up. Cheese or veggie slice.</p></div></div>
+    <div class="dish"><figure class="ph" data-wiki="Doubles_(food)"></figure><div class="t"><h4>Doubles</h4><p>Trinidadian street food: two soft fried breads with curried chickpeas, on Liberty Ave a few stops from your base.</p></div></div>
+    <div class="dish"><figure class="ph" data-wiki="Falafel"></figure><div class="t"><h4>Halal-cart falafel</h4><p>Falafel over rice with white and hot sauce from a street cart. Cheap, filling, everywhere in Manhattan.</p></div></div>
+    <div class="dish"><figure class="ph" data-wiki="Injera"></figure><div class="t"><h4>Ethiopian in DC</h4><p>DC has one of the largest Ethiopian communities outside Africa. Order shiro or a veggie combo on injera.</p></div></div>
+    <div class="dish"><figure class="ph" data-wiki="Dosa"></figure><div class="t"><h4>Dosa cart</h4><p>NY Dosas in Washington Square Park: cheap vegan dosas and uttapam from a long-running cart.</p></div></div>
+  </div>
+</section>
+
+<section id="groceries">
+  <div class="sec-head"><div class="eyebrow">Cook to save money</div><h2>Supermarkets near your stays</h2>
+  <p class="lead">Check opening hours on Google Maps before you go; they change around holidays.</p></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Store</th><th>Address</th><th>Near</th><th>Good for</th></tr></thead>
+      <tbody>
+        <tr><td><b>SuperFresh</b></td><td>3260 Fulton St, Brooklyn</td><td>Atkins Ave base, along Fulton St</td><td>Everyday groceries; opened Oct 2025</td></tr>
+        <tr><td><b>Aldi</b></td><td>Gateway Center, 501 Gateway Dr, Brooklyn</td><td>~10 min by car</td><td>Cheapest staples, snacks for the road</td></tr>
+        <tr><td><b>Lidl</b></td><td>Gateway Center, Brooklyn</td><td>~10 min by car</td><td>Cheap bakery and produce; opened Jan 2025</td></tr>
+        <tr><td><b>ShopRite</b></td><td>Gateway Center, Brooklyn</td><td>~10 min by car</td><td>Big selection, international aisle</td></tr>
+        <tr><td><b>Safeway</b></td><td>3830 Georgia Ave NW, Washington</td><td>Decatur St base, by Georgia Ave–Petworth Metro</td><td>Full supermarket; picnic supplies for Assateague</td></tr>
+        <tr><td><b>Target (DC USA)</b></td><td>Columbia Heights, Washington</td><td>One Metro stop south</td><td>Groceries plus anything you forgot to pack</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  <div>Photos load live from Wikipedia / Wikimedia Commons; each photo links to its article. Prices and hours checked October 2026; confirm on official sites before visiting.</div>
+  <ul>
+    <li><a href="https://www.metmuseum.org/plan-your-visit">The Met · hours and tickets</a></li>
+    <li><a href="https://nmaahc.si.edu/visit/passes">NMAAHC · timed passes</a></li>
+    <li><a href="https://home.nps.gov/asis/planyourvisit/fees.htm">Assateague · fees</a></li>
+    <li><a href="https://nps.gov/asis/planyourvisit/hours.htm">Assateague · hours</a></li>
+    <li><a href="https://www.nps.gov/gate/planyourvisit/hours.htm">Gateway NRA · Jamaica Bay hours</a></li>
+    <li><a href="https://www.timeout.com/newyork/news/the-2026-rockefeller-center-christmas-tree-lighting-has-officially-been-announced-and-its-happening-earlier-than-you-think-092926">Time Out · 2026 tree lighting</a></li>
+    <li><a href="https://washingtonian.com/2024/08/26/neighborhood-guide-things-to-do-in-petworth/">Washingtonian · Petworth guide</a></li>
+    <li><a href="https://blog.andymasley.com/p/andys-dc-area-vegan-dining-recs">DC vegan dining recs</a></li>
+    <li><a href="https://www.veganfoodandliving.com/vegan-lifestyle/vegans-guide-new-york-city/">Vegan Food &amp; Living · NYC guide</a></li>
+    <li><a href="https://www.marketreportblog.com/2025/11/superfresh-brooklyn-ny-cypress-hills.html">SuperFresh Cypress Hills</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Gateway_Center_(Brooklyn)">Gateway Center stores</a></li>
+    <li><a href="https://www.popville.com/2024/02/petworth-georgia-ave-safeway-getting-an-anti-crime-remodel/">Petworth Safeway</a></li>
+  </ul>
+</div></footer>
+
+<script>
+(function(){
+  var figs=document.querySelectorAll('figure[data-wiki]');
+  function label(t){return decodeURIComponent(t).replace(/_/g,' ').replace(/\s*\(.*\)$/,'');}
+  figs.forEach(function(f){
+    var t=f.getAttribute('data-wiki');
+    var fb=document.createElement('div'); fb.className='ph-fallback'; fb.textContent=label(t); f.appendChild(fb);
+    fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t))
+      .then(function(r){if(!r.ok)throw 0;return r.json();})
+      .then(function(d){
+        var src=(d.thumbnail&&d.thumbnail.source)||(d.originalimage&&d.originalimage.source);
+        if(!src)return;
+        src=src.replace(/\/\d+px-/,'/960px-');
+        var img=new Image(); img.loading='lazy'; img.alt=d.title||label(t);
+        img.onload=function(){fb.remove();};
+        img.onerror=function(){if(d.thumbnail){img.onerror=null;img.src=d.thumbnail.source;}};
+        img.src=src;
+        f.insertBefore(img,f.firstChild);
+        var c=document.createElement('figcaption');
+        var a=document.createElement('a'); a.href=(d.content_urls&&d.content_urls.desktop.page)||('https://en.wikipedia.org/wiki/'+t);
+        a.target='_blank'; a.rel='noopener'; a.textContent=(d.title||label(t))+' · Wikipedia';
+        c.appendChild(a); f.appendChild(c);
+      }).catch(function(){});
+  });
+})();
+</script>
+
+</body>
+</html>
